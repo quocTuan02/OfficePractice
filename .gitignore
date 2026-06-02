@@ -1,0 +1,52 @@
+# Build output
+bin/
+obj/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# JetBrains Rider
+.idea/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+# VSTO
+*.vsto
+*.manifest
+ExcelAddIn_TemporaryKey.pfx
+WordAddIn_TemporaryKey.pfx
+
+# Claude Code
+.claude/
+
+# Backup/temp folders
+*_old/
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Temp
+*.tmp
+*.temp
+~$*
