@@ -130,9 +130,9 @@
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>
-                                    <Run Text="{Binding PointsEarned}"/>
+                                    <Run Text="{Binding PointsEarned, Mode=OneWay}"/>
                                     <Run Text="/" Foreground="#45475A"/>
-                                    <Run Text="{Binding PointsMax}" Foreground="#45475A"/>
+                                    <Run Text="{Binding PointsMax, Mode=OneWay}" Foreground="#45475A"/>
                                 </TextBlock>
                             </Grid>
                         </Border>

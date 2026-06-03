@@ -75,14 +75,14 @@
                             <StackPanel Margin="2,2">
                                 <TextBlock Foreground="#CDD6F4" FontSize="12">
                                     <Run Text="Task " FontSize="11" Foreground="#585B70"/>
-                                    <Run Text="{Binding Number}" FontWeight="SemiBold"/>
+                                    <Run Text="{Binding Number, Mode=OneWay}" FontWeight="SemiBold"/>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Objective}" FontSize="11"
                                            Foreground="#A6ADC8" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock FontSize="11" Margin="0,2,0,0">
-                                    <Run Text="{Binding ScoringRules.Count}" Foreground="#F9E2AF" FontWeight="SemiBold"/>
+                                    <Run Text="{Binding ScoringRules.Count, Mode=OneWay}" Foreground="#F9E2AF" FontWeight="SemiBold"/>
                                     <Run Text=" rules · " Foreground="#45475A"/>
-                                    <Run Text="{Binding Points}" Foreground="#A6E3A1" FontWeight="SemiBold"/>
+                                    <Run Text="{Binding Points, Mode=OneWay}" Foreground="#A6E3A1" FontWeight="SemiBold"/>
                                     <Run Text=" đ" Foreground="#45475A"/>
                                 </TextBlock>
                             </StackPanel>
@@ -160,7 +160,7 @@
                                 <Border Grid.Column="2" Background="#1A2E1A" CornerRadius="3"
                                         Padding="6,2" Margin="8,0,0,0">
                                     <TextBlock FontSize="11" FontWeight="SemiBold">
-                                        <Run Text="{Binding Points}" Foreground="#A6E3A1"/>
+                                        <Run Text="{Binding Points, Mode=OneWay}" Foreground="#A6E3A1"/>
                                         <Run Text=" đ" Foreground="#45475A"/>
                                     </TextBlock>
                                 </Border>
@@ -191,7 +191,7 @@
                     <StackPanel>
                         <TextBlock Text="THAM SỐ" FontSize="10" Foreground="#585B70"
                                    FontWeight="SemiBold" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding SelectedRuleParameters}" IsReadOnly="True"
+                        <TextBox Text="{Binding SelectedRuleParameters, Mode=OneWay}" IsReadOnly="True"
                                  TextWrapping="Wrap" Background="#1E1E2E" Foreground="#A6ADC8"
                                  BorderThickness="0" FontFamily="Consolas" FontSize="12" MaxHeight="90"/>
                     </StackPanel>
@@ -311,9 +311,9 @@
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding PointsEarned}"/>
+                                                    <Run Text="{Binding PointsEarned, Mode=OneWay}"/>
                                                     <Run Text="/" Foreground="#45475A"/>
-                                                    <Run Text="{Binding PointsMax}" Foreground="#585B70"/>
+                                                    <Run Text="{Binding PointsMax, Mode=OneWay}" Foreground="#585B70"/>
                                                 </TextBlock>
                                             </Grid>
                                         </Border>

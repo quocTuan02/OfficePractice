@@ -93,11 +93,11 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Foreground="#A6ADC8" FontSize="12" VerticalAlignment="Center">
                             <Run Text="Bài thi: "/>
-                            <Run Text="{Binding SelectedTest.Name}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
+                            <Run Text="{Binding SelectedTest.Name, Mode=OneWay}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
                             <Run Text="    Tổng điểm: "/>
-                            <Run Text="{Binding SelectedTest.TotalPoints}" Foreground="#A6E3A1" FontWeight="SemiBold"/>
+                            <Run Text="{Binding SelectedTest.TotalPoints, Mode=OneWay}" Foreground="#A6E3A1" FontWeight="SemiBold"/>
                             <Run Text=" điểm    Thời gian: "/>
-                            <Run Text="{Binding SelectedTest.TotalTimeMinutes}" Foreground="#F9E2AF" FontWeight="SemiBold"/>
+                            <Run Text="{Binding SelectedTest.TotalTimeMinutes, Mode=OneWay}" Foreground="#F9E2AF" FontWeight="SemiBold"/>
                             <Run Text=" phút"/>
                         </TextBlock>
                     </StackPanel>
@@ -200,7 +200,7 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="Rules" Binding="{Binding ScoringRules.Count}" Width="60" IsReadOnly="True">
+                        <DataGridTextColumn Header="Rules" Binding="{Binding ScoringRules.Count, Mode=OneWay}" Width="60" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Foreground" Value="#F9E2AF"/>

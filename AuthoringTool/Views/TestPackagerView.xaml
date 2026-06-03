@@ -108,8 +108,8 @@
                                FontWeight="SemiBold" Margin="0,0,0,10"/>
                     <Border Background="#181825" CornerRadius="6" Padding="16" Margin="0,0,0,24">
                         <TextBlock FontFamily="Consolas" FontSize="12" Foreground="#A6ADC8">
-                            <Run Text="{Binding SelectedTest.Name, StringFormat={}{0}_v}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
-                            <Run Text="{Binding SelectedTest.Version}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
+                            <Run Text="{Binding SelectedTest.Name, Mode=OneWay, StringFormat={}{0}_v}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
+                            <Run Text="{Binding SelectedTest.Version, Mode=OneWay}" Foreground="#CDD6F4" FontWeight="SemiBold"/>
                             <Run Text="/"/>
                             <LineBreak/>
                             <Run Text="  ├─ test.json" Foreground="#89B4FA"/>

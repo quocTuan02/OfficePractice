@@ -76,12 +76,14 @@ namespace MainApp
         {
             InitializeComponent();
             StartPipeServer();
+
             // Khi MainApp được kích hoạt lại, đẩy Excel lên trên (top-level window)
             Activated += (s, e) =>
             {
                 if (_officeHwnd != IntPtr.Zero && _isExcel)
                     SetWindowPos(_officeHwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
             };
+
         }
 
         private void StartPipeServer()
@@ -95,7 +97,17 @@ namespace MainApp
         private async void OpenExcel_Click(object sender, RoutedEventArgs e)
         {
             _isExcel = true;
-            await OpenOffice("Excel.Application", "EXCEL", "Excel — Nhập liệu cơ bản");
+            // Nếu đã load package và task có template file → mở thẳng file đó
+            var templatePath = _currentTask != null &&
+                               !string.IsNullOrEmpty(_currentTask.TemplateFile) &&
+                               File.Exists(_currentTask.TemplateFile)
+                ? _currentTask.TemplateFile : null;
+
+            var title = templatePath != null
+                ? $"Task {_currentTask!.Number}: {_currentTask.Objective}"
+                : "Excel — Nhập liệu cơ bản";
+
+            await OpenOffice("Excel.Application", "EXCEL", title, templatePath);
         }
 
         private async void OpenWord_Click(object sender, RoutedEventArgs e)
@@ -104,19 +116,31 @@ namespace MainApp
             await OpenOffice("Word.Application", "WINWORD", "Word — Soạn thảo văn bản");
         }
 
-        private async Task OpenOffice(string progId, string processName, string title)
+        private async Task OpenOffice(string progId, string processName, string title,
+                                      string filePath = null)
         {
             BtnExcel.IsEnabled = false;
             BtnWord.IsEnabled = false;
-            AppendLog($"Đang mở {processName}...");
+            AppendLog($"Đang mở {processName}" +
+                      (filePath != null ? $": {Path.GetFileName(filePath)}" : "") + "...");
 
             try
             {
                 var type = Type.GetTypeFromProgID(progId, throwOnError: true);
                 dynamic app = Activator.CreateInstance(type);
                 app.Visible = true;
-                if (progId.Contains("Excel")) app.Workbooks.Add();
-                else app.Documents.Add();
+
+                if (filePath != null)
+                {
+                    // Mở file template của task
+                    if (progId.Contains("Excel")) app.Workbooks.Open(filePath);
+                    else app.Documents.Open(filePath);
+                }
+                else
+                {
+                    if (progId.Contains("Excel")) app.Workbooks.Add();
+                    else app.Documents.Add();
+                }
 
                 await Task.Delay(2000);
 
@@ -195,8 +219,10 @@ namespace MainApp
 
                     if (_isExcel)
                     {
-                        // Tính chiều cao title bar (có DPI scale)
-                        var captionH = (int)(GetSystemMetrics(SM_CYCAPTION) * dpi.DpiScaleY);
+                        // captionH: dùng giá trị Win32 thuần (không nhân DPI vì GetSystemMetrics
+                        // trả về physical pixels khi app DPI-aware, MoveWindow cũng dùng physical)
+                        var captionH = GetSystemMetrics(SM_CYCAPTION);
+                        AppendLog($"DEBUG captionH={captionH} screenPos=({(int)screenPos.X},{(int)screenPos.Y}) w={w} h={h}");
 
                         // Dịch Excel lên trên captionH px để title bar ẩn sau toolbar của app
                         MoveWindow(_officeHwnd, (int)screenPos.X, (int)screenPos.Y - captionH,
@@ -249,6 +275,16 @@ namespace MainApp
         }
 
         private void ClearLog_Click(object sender, RoutedEventArgs e) => LogText.Text = string.Empty;
+
+        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            // F5 = Nộp bài (hoạt động dù Excel đang che WPF)
+            if (e.Key == System.Windows.Input.Key.F5)
+            {
+                e.Handled = true;
+                SubmitAndScore_Click(sender, new RoutedEventArgs());
+            }
+        }
 
         // ── Package integration ────────────────────────────────────────
 
@@ -305,6 +341,8 @@ namespace MainApp
 
                 TaskComboBox.SelectedIndex = 0;
                 TaskSelectorBorder.Visibility = Visibility.Visible;
+                // Hiện nút Nộp bài trên toolbar (nằm trong vùng không bị Excel che)
+                BtnSubmitToolbar.Visibility = Visibility.Visible;
                 AppendLog($"Đã load: {_loadedTest.Name} · {_loadedTest.Tasks.Count} tasks · {_loadedTest.TotalPoints} điểm");
             }
             catch (Exception ex)
@@ -314,12 +352,41 @@ namespace MainApp
             }
         }
 
+        private async void AutoOpenTemplate()
+        {
+            if (_currentTask == null) return;
+            var path = _currentTask.TemplateFile;
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+
+            // Đóng Excel cũ nếu đang mở
+            if (_officeHwnd != IntPtr.Zero)
+            {
+                try
+                {
+                    SetWindowRgn(_officeHwnd, IntPtr.Zero, false);
+                    if (!_isExcel) SetParent(_officeHwnd, IntPtr.Zero);
+                    _officeProcess?.Kill();
+                }
+                catch { }
+                _officeHwnd = IntPtr.Zero;
+                _officeProcess = null;
+                OfficePlaceholder.Visibility = Visibility.Visible;
+                BtnClose.IsEnabled = false;
+            }
+
+            _isExcel = true;
+            await OpenOffice("Excel.Application", "EXCEL",
+                $"Task {_currentTask.Number}: {_currentTask.Objective}", path);
+        }
+
         private void TaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (TaskComboBox.SelectedItem is ComboBoxItem item && item.Tag is TaskModel task)
             {
                 _currentTask = task;
                 UpdateTaskView();
+                // Auto-open template bất kể lần đầu hay đổi task
+                AutoOpenTemplate();
             }
         }
 
@@ -374,58 +441,94 @@ namespace MainApp
                 StepsPanel.Children.Add(row);
             }
 
-            // Auto-open template file if it exists and Excel is not already open
-            if (!string.IsNullOrEmpty(_currentTask.TemplateFile) &&
-                File.Exists(_currentTask.TemplateFile) &&
-                _officeHwnd == IntPtr.Zero)
+            BtnSubmit.Content = "Lưu & Nộp bài";
+
+            if (!string.IsNullOrEmpty(_currentTask.TemplateFile) && File.Exists(_currentTask.TemplateFile))
             {
-                AppendLog($"Template: {Path.GetFileName(_currentTask.TemplateFile)}");
-                BtnSubmit.Content = "Lưu & Nộp bài";
+                AppendLog($"▶ Nhấn [Excel] để mở file làm bài:");
+                AppendLog($"  {Path.GetFileName(_currentTask.TemplateFile)}");
+                AppendLog($"  Làm xong → Ctrl+S → Nhấn [Lưu & Nộp bài]");
+            }
+            else
+            {
+                AppendLog("⚠ Không tìm thấy file template. Nhấn Excel mở file thủ công.");
             }
         }
 
         private async void SubmitAndScore_Click(object sender, RoutedEventArgs e)
         {
-            if (_currentTask == null || _currentTask.ScoringRules.Count == 0)
-            {
-                AppendLog("Đã nộp bài (không có scoring rules).");
-                MessageBox.Show("Đã nộp bài!", "Thông báo",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+            if (_currentTask == null) return;
 
-            // Ask for the answer file
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "Excel Files|*.xlsx;*.xlsm;*.xls|All Files|*.*",
-                Title  = "Chọn file bài làm của bạn để chấm điểm"
-            };
-            if (dlg.ShowDialog() != true) return;
-
+            AppendLog("Đang chấm điểm...");
             BtnSubmit.IsEnabled = false;
             BtnSubmit.Content   = "Đang chấm...";
-            AppendLog($"Chấm điểm: {Path.GetFileName(dlg.FileName)}");
+            BtnSubmitToolbar.IsEnabled = false;
+            BtnSubmitToolbar.Content   = "⏳ Chấm...";
 
+            // Xác định file cần chấm
+            string answerFile;
+            if (!string.IsNullOrEmpty(_currentTask.TemplateFile) && File.Exists(_currentTask.TemplateFile))
+            {
+                answerFile = _currentTask.TemplateFile;
+            }
+            else
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Excel Files|*.xlsx;*.xlsm;*.xls|All Files|*.*",
+                    Title  = "Chọn file bài làm"
+                };
+                if (dlg.ShowDialog() != true)
+                {
+                    BtnSubmit.IsEnabled = true;  BtnSubmit.Content = "Lưu & Nộp bài";
+                    BtnSubmitToolbar.IsEnabled = true; BtnSubmitToolbar.Content = "✓ Nộp bài";
+                    return;
+                }
+                answerFile = dlg.FileName;
+            }
+
+            AppendLog($"File: {Path.GetFileName(answerFile)}");
+
+            string tempScore = answerFile;
             try
             {
+                // Copy sang temp để tránh Excel lock
+                var tmp = Path.Combine(Path.GetTempPath(),
+                    "MOS_" + Guid.NewGuid().ToString("N")[..6] + Path.GetExtension(answerFile));
+                File.Copy(answerFile, tmp, overwrite: true);
+                tempScore = tmp;
+            }
+            catch { /* dùng thẳng file gốc nếu copy lỗi */ }
+
+            string tempToDelete = tempScore == answerFile ? string.Empty : tempScore;
+            try
+            {
+                if (_currentTask.ScoringRules.Count == 0)
+                {
+                    AppendLog("Nộp bài thành công (task chưa có scoring rules).");
+                    return;
+                }
+
                 var result = await Task.Run(
-                    () => _executor.ExecuteTask(_currentTask, dlg.FileName));
+                    () => _executor.ExecuteTask(_currentTask, tempScore));
 
-                AppendLog($"Kết quả Task {result.TaskNumber}: {result.TotalPoints}/{result.MaxPoints} điểm");
+                AppendLog($"✓ {result.TotalPoints}/{result.MaxPoints} điểm — {result.Summary}");
 
-                var win = new ScoringResultWindow(result) { Owner = this };
-                win.ShowDialog();
+                // Dùng Show (non-blocking) thay vì ShowDialog để không trap UI thread
+                var win = new ScoringResultWindow(result) { Topmost = true };
+                win.Show();
             }
             catch (Exception ex)
             {
                 AppendLog($"Lỗi chấm: {ex.Message}");
-                MessageBox.Show($"Không thể chấm điểm:\n{ex.Message}", "Lỗi",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 BtnSubmit.IsEnabled = true;
                 BtnSubmit.Content   = "Lưu & Nộp bài";
+                BtnSubmitToolbar.IsEnabled = true;
+                BtnSubmitToolbar.Content   = "✓ Nộp bài";
+                try { if (!string.IsNullOrEmpty(tempToDelete) && File.Exists(tempToDelete)) File.Delete(tempToDelete); } catch { }
             }
         }
 
