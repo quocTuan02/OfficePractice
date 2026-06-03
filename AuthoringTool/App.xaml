@@ -1,0 +1,25 @@
+<Application x:Class="AuthoringTool.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AuthoringTool.ViewModels"
+             xmlns:views="clr-namespace:AuthoringTool.Views"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- DataTemplate mapping: ViewModel → View -->
+        <DataTemplate DataType="{x:Type vm:TemplateManagerViewModel}">
+            <views:TemplateManagerView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TaskEditorViewModel}">
+            <views:TaskEditorView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ScoringDesignerViewModel}">
+            <views:ScoringDesignerView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:TestPackagerViewModel}">
+            <views:TestPackagerView/>
+        </DataTemplate>
+
+        <!-- BoolToVisibility Converter -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Application.Resources>
+</Application>

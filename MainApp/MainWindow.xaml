@@ -33,6 +33,10 @@
                         Background="#45475A" Foreground="White" BorderBrush="Transparent"
                         Padding="16,6" Margin="4,0" FontSize="13" Cursor="Hand"
                         IsEnabled="False"/>
+                <Button Content="📦 Load Package" x:Name="BtnLoadPackage" Click="LoadPackage_Click"
+                        Background="#CBA6F7" Foreground="#1E1E2E" BorderBrush="Transparent"
+                        Padding="16,6" Margin="12,0,4,0" FontSize="13" Cursor="Hand"
+                        FontWeight="SemiBold"/>
             </StackPanel>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
@@ -70,22 +74,38 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Exercise header -->
+                <!-- Row 0: Exercise header -->
                 <Border Grid.Row="0" Background="#181825" Padding="16,12">
                     <StackPanel>
                         <TextBlock Text="BÀI TẬP THỰC HÀNH" Foreground="#6C7086"
                                    FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
                         <TextBlock x:Name="ExerciseTitle" Text="Excel — Nhập liệu cơ bản"
-                                   Foreground="#CDD6F4" FontSize="15" FontWeight="Bold"/>
+                                   Foreground="#CDD6F4" FontSize="15" FontWeight="Bold"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Instructions -->
-                <Border Grid.Row="1" Background="#181825" Margin="0,1,0,0" Padding="16,12">
+                <!-- Row 1: Task selector (visible when package loaded) -->
+                <Border Grid.Row="1" x:Name="TaskSelectorBorder" Background="#313244"
+                        Margin="0,1,0,0" Padding="12,8" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Task:" Foreground="#A6ADC8" FontSize="12"
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="TaskComboBox" MinWidth="180"
+                                  Background="#45475A" Foreground="#CDD6F4" BorderBrush="#585B70"
+                                  SelectionChanged="TaskComboBox_SelectionChanged"/>
+                        <TextBlock x:Name="TaskPointsLabel" Foreground="#A6E3A1"
+                                   FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Row 2: Instructions -->
+                <Border Grid.Row="2" Background="#181825" Margin="0,1,0,0" Padding="16,12">
                     <StackPanel>
                         <TextBlock Text="HƯỚNG DẪN" Foreground="#6C7086"
                                    FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -121,8 +141,8 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Event log -->
-                <Grid Grid.Row="2" Margin="0,1,0,0">
+                <!-- Row 3: Event log -->
+                <Grid Grid.Row="3" Margin="0,1,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -144,9 +164,11 @@
                     </Border>
                 </Grid>
 
-                <!-- Submit button -->
-                <Border Grid.Row="3" Background="#181825" Padding="16,12">
-                    <Button Content="Nộp bài" Background="#A6E3A1" Foreground="#1E1E2E"
+                <!-- Row 4: Submit button -->
+                <Border Grid.Row="4" Background="#181825" Padding="16,12">
+                    <Button x:Name="BtnSubmit" Content="Nộp bài"
+                            Click="SubmitAndScore_Click"
+                            Background="#A6E3A1" Foreground="#1E1E2E"
                             BorderBrush="Transparent" FontSize="14" FontWeight="Bold"
                             Padding="0,10" Cursor="Hand" HorizontalAlignment="Stretch"/>
                 </Border>

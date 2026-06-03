@@ -1,0 +1,334 @@
+<UserControl x:Class="AuthoringTool.Views.ScoringDesignerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#181825" Padding="16,10">
+            <TextBlock Text="Scoring Designer" FontSize="16" FontWeight="SemiBold" Foreground="#CDD6F4"/>
+        </Border>
+
+        <!-- 3-Column Layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="1"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="1"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Col 1: Tests -->
+            <Grid Grid.Column="0" Background="#181825">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="BÀI THI" FontSize="11" Foreground="#585B70"
+                           FontWeight="SemiBold" Margin="12,10,12,6"/>
+                <ListBox Grid.Row="1" ItemsSource="{Binding Tests}" SelectedItem="{Binding SelectedTest}"
+                         Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Foreground="#CDD6F4" FontSize="12"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="12,7"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#313244"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#313244"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#45475A"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Grid>
+
+            <Rectangle Grid.Column="1" Fill="#313244"/>
+
+            <!-- Col 2: Tasks -->
+            <Grid Grid.Column="2" Background="#1E1E2E">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="TASKS" FontSize="11" Foreground="#585B70"
+                           FontWeight="SemiBold" Margin="12,10,12,6"/>
+                <ListBox Grid.Row="1" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}"
+                         Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,2">
+                                <TextBlock Foreground="#CDD6F4" FontSize="12">
+                                    <Run Text="Task " FontSize="11" Foreground="#585B70"/>
+                                    <Run Text="{Binding Number}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Objective}" FontSize="11"
+                                           Foreground="#A6ADC8" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock FontSize="11" Margin="0,2,0,0">
+                                    <Run Text="{Binding ScoringRules.Count}" Foreground="#F9E2AF" FontWeight="SemiBold"/>
+                                    <Run Text=" rules · " Foreground="#45475A"/>
+                                    <Run Text="{Binding Points}" Foreground="#A6E3A1" FontWeight="SemiBold"/>
+                                    <Run Text=" đ" Foreground="#45475A"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#313244"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#313244"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#45475A"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Grid>
+
+            <Rectangle Grid.Column="3" Fill="#313244"/>
+
+            <!-- Col 3: Rules + Test Panel -->
+            <Grid Grid.Column="4" Background="#1E1E2E">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>   <!-- toolbar -->
+                    <RowDefinition Height="*"/>       <!-- rules list -->
+                    <RowDefinition Height="Auto"/>   <!-- param preview -->
+                    <RowDefinition Height="Auto"/>   <!-- test file bar -->
+                    <RowDefinition Height="Auto"/>   <!-- test results -->
+                </Grid.RowDefinitions>
+
+                <!-- Rules Toolbar -->
+                <Border Grid.Row="0" Background="#181825" Padding="12,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="SCORING RULES" FontSize="11" Foreground="#585B70"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Button Content="+ Add" Command="{Binding AddRuleCommand}"
+                                Background="#89B4FA" Foreground="#1E1E2E"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand" FontWeight="SemiBold"/>
+                        <Button Content="Sửa" Command="{Binding EditRuleCommand}" Margin="5,0,0,0"
+                                Background="#45475A" Foreground="#CDD6F4"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand"/>
+                        <Button Content="Xóa" Command="{Binding DeleteRuleCommand}" Margin="4,0,0,0"
+                                Background="#F38BA8" Foreground="#1E1E2E"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Rules List -->
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Rules}"
+                         SelectedItem="{Binding SelectedRule}"
+                         Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="#313244" CornerRadius="3"
+                                        Padding="6,2" Margin="0,0,10,0" VerticalAlignment="Top">
+                                    <TextBlock Text="{Binding RuleType}" FontSize="10"
+                                               Foreground="#CBA6F7" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock Grid.Column="1" Text="{Binding Description}"
+                                           Foreground="#CDD6F4" FontSize="12"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Background="#1A2E1A" CornerRadius="3"
+                                        Padding="6,2" Margin="8,0,0,0">
+                                    <TextBlock FontSize="11" FontWeight="SemiBold">
+                                        <Run Text="{Binding Points}" Foreground="#A6E3A1"/>
+                                        <Run Text=" đ" Foreground="#45475A"/>
+                                    </TextBlock>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#313244"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#313244"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#45475A"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+
+                <!-- Param Preview (selected rule) -->
+                <Border Grid.Row="2" Background="#181825" Padding="14,10"
+                        Visibility="{Binding HasRuleSelection, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="THAM SỐ" FontSize="10" Foreground="#585B70"
+                                   FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding SelectedRuleParameters}" IsReadOnly="True"
+                                 TextWrapping="Wrap" Background="#1E1E2E" Foreground="#A6ADC8"
+                                 BorderThickness="0" FontFamily="Consolas" FontSize="12" MaxHeight="90"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Test File Bar -->
+                <Border Grid.Row="3" Background="#313244" Padding="12,8"
+                        Visibility="{Binding HasTaskSelection, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="File chấm:" Foreground="#A6ADC8"
+                                   FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding TestFilePath}" IsReadOnly="True"
+                                 Background="#1E1E2E" Foreground="#585B70" BorderThickness="0"
+                                 FontSize="11" VerticalAlignment="Center" Padding="4,4"/>
+                        <Button Grid.Column="2" Content="Chọn File" Margin="6,0,0,0"
+                                Command="{Binding BrowseTestFileCommand}"
+                                Background="#45475A" Foreground="#CDD6F4"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand" FontSize="12"/>
+                        <Button Grid.Column="3" Content="▶ Test Rule" Margin="6,0,0,0"
+                                Command="{Binding TestRuleCommand}"
+                                Background="#CBA6F7" Foreground="#1E1E2E"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand"
+                                FontSize="12" FontWeight="SemiBold"
+                                ToolTip="Chạy thử rule đang chọn"/>
+                        <Button Grid.Column="4" Content="▶▶ Test All" Margin="4,0,0,0"
+                                Command="{Binding TestAllRulesCommand}"
+                                Background="#F9E2AF" Foreground="#1E1E2E"
+                                BorderThickness="0" Padding="10,5" Cursor="Hand"
+                                FontSize="12" FontWeight="SemiBold"
+                                ToolTip="Chạy thử tất cả rules của task này"/>
+                    </Grid>
+                </Border>
+
+                <!-- Test Results Panel -->
+                <Border Grid.Row="4" Background="#11111B" MaxHeight="220"
+                        Visibility="{Binding IsTestPanelVisible, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Summary header -->
+                        <Border Grid.Row="0" Background="#181825" Padding="12,7">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="KẾT QUẢ CHẤM ĐIỂM" FontSize="10" Foreground="#585B70"
+                                           FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="{Binding TestSummary}" FontSize="12"
+                                           Foreground="#F9E2AF" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Result rows -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding TestResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="12,7" BorderThickness="0,0,0,1"
+                                                BorderBrush="#313244">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#1A2E1A"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Passed}" Value="False">
+                                                            <Setter Property="Background" Value="#2E1A1A"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="22"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <!-- Pass/Fail icon -->
+                                                <TextBlock Grid.Column="0" Text="{Binding StatusIcon}"
+                                                           FontSize="14" FontWeight="Bold"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#A6E3A1"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Passed}" Value="False">
+                                                                    <Setter Property="Foreground" Value="#F38BA8"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <!-- Details -->
+                                                <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                                    <TextBlock Text="{Binding Description}"
+                                                               Foreground="#CDD6F4" FontSize="12"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Details}"
+                                                               Foreground="#A6ADC8" FontSize="11"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                                <!-- Points -->
+                                                <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                                           Margin="10,0,0,0" FontSize="12" FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#A6E3A1"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Passed}" Value="False">
+                                                                    <Setter Property="Foreground" Value="#585B70"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                    <Run Text="{Binding PointsEarned}"/>
+                                                    <Run Text="/" Foreground="#45475A"/>
+                                                    <Run Text="{Binding PointsMax}" Foreground="#585B70"/>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#11111B" Padding="16,6">
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#585B70" FontSize="12"/>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,163 @@
+<Window x:Class="AuthoringTool.Dialogs.EditRuleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Thêm / Sửa Scoring Rule"
+        Width="520" Height="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="#1E1E2E">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#313244"/>
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="BorderBrush" Value="#45475A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#313244"/>
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="BorderBrush" Value="#45475A"/>
+            <Setter Property="Padding" Value="8,5"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#A6ADC8"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Padding" Value="0,4,0,2"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Rule Type -->
+        <TextBlock Grid.Row="0" Text="Loại Rule *" FontWeight="SemiBold"/>
+        <ComboBox Grid.Row="2" x:Name="CboRuleType" SelectionChanged="RuleType_Changed">
+            <ComboBoxItem Content="Cell Value – Kiểm tra giá trị ô"/>
+            <ComboBoxItem Content="Formula – Kiểm tra công thức"/>
+            <ComboBoxItem Content="Formatting – Kiểm tra định dạng"/>
+            <ComboBoxItem Content="Object Existence – Kiểm tra đối tượng tồn tại"/>
+            <ComboBoxItem Content="Range Comparison – So sánh vùng dữ liệu"/>
+        </ComboBox>
+
+        <!-- Description + Points -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="100"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Mô tả Rule" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtDescription"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Điểm" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtPoints" Text="5"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Dynamic Parameters Panel -->
+        <TextBlock Grid.Row="6" Text="Tham số" FontWeight="SemiBold"/>
+
+        <ScrollViewer Grid.Row="8" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ParamsPanel">
+
+                <!-- CellValue params (default visible) -->
+                <StackPanel x:Name="PanelCellValue">
+                    <Label Content="Địa chỉ ô (VD: A1, B3)"/>
+                    <TextBox x:Name="TxtCellAddress" Margin="0,0,0,8"/>
+                    <Label Content="Giá trị mong đợi"/>
+                    <TextBox x:Name="TxtExpectedValue" Margin="0,0,0,8"/>
+                    <Label Content="Kiểu so sánh"/>
+                    <ComboBox x:Name="CboCellCompare" Margin="0,0,0,8">
+                        <ComboBoxItem Content="Equals" IsSelected="True"/>
+                        <ComboBoxItem Content="Contains"/>
+                        <ComboBoxItem Content="GreaterThan"/>
+                        <ComboBoxItem Content="LessThan"/>
+                        <ComboBoxItem Content="NotEmpty"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Formula params -->
+                <StackPanel x:Name="PanelFormula" Visibility="Collapsed">
+                    <Label Content="Địa chỉ ô chứa công thức (VD: C5)"/>
+                    <TextBox x:Name="TxtFormulaCell" Margin="0,0,0,8"/>
+                    <Label Content="Công thức mong đợi (VD: =SUM(A1:A10))"/>
+                    <TextBox x:Name="TxtExpectedFormula" Margin="0,0,0,8"/>
+                </StackPanel>
+
+                <!-- Formatting params -->
+                <StackPanel x:Name="PanelFormatting" Visibility="Collapsed">
+                    <Label Content="Địa chỉ ô (VD: A1)"/>
+                    <TextBox x:Name="TxtFmtCellAddress" Margin="0,0,0,8"/>
+                    <Label Content="Thuộc tính định dạng"/>
+                    <ComboBox x:Name="CboFmtProperty" Margin="0,0,0,8">
+                        <ComboBoxItem Content="Bold" IsSelected="True"/>
+                        <ComboBoxItem Content="Italic"/>
+                        <ComboBoxItem Content="FontSize"/>
+                        <ComboBoxItem Content="FontColor"/>
+                        <ComboBoxItem Content="BackgroundColor"/>
+                        <ComboBoxItem Content="NumberFormat"/>
+                        <ComboBoxItem Content="Underline"/>
+                    </ComboBox>
+                    <Label Content="Giá trị mong đợi (VD: True, 14, #FF0000, 0.00)"/>
+                    <TextBox x:Name="TxtFmtExpectedValue" Margin="0,0,0,8"/>
+                </StackPanel>
+
+                <!-- ObjectExistence params -->
+                <StackPanel x:Name="PanelObjectExistence" Visibility="Collapsed">
+                    <Label Content="Loại đối tượng"/>
+                    <ComboBox x:Name="CboObjectType" Margin="0,0,0,8">
+                        <ComboBoxItem Content="Chart" IsSelected="True"/>
+                        <ComboBoxItem Content="PivotTable"/>
+                        <ComboBoxItem Content="Table"/>
+                        <ComboBoxItem Content="Image"/>
+                        <ComboBoxItem Content="Shape"/>
+                    </ComboBox>
+                    <Label Content="Tên đối tượng (để trống = kiểm tra bất kỳ)"/>
+                    <TextBox x:Name="TxtObjectName" Margin="0,0,0,8"/>
+                </StackPanel>
+
+                <!-- RangeComparison params -->
+                <StackPanel x:Name="PanelRangeComparison" Visibility="Collapsed">
+                    <Label Content="Vùng cần kiểm tra (VD: A1:B10)"/>
+                    <TextBox x:Name="TxtRangeAddress" Margin="0,0,0,8"/>
+                    <Label Content="Giá trị tham chiếu / Sheet tham chiếu"/>
+                    <TextBox x:Name="TxtRangeReference" Margin="0,0,0,8"/>
+                    <Label Content="Sai số cho phép (số thực, VD: 0.01)"/>
+                    <TextBox x:Name="TxtRangeTolerance" Text="0" Margin="0,0,0,8"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="10" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Hủy" Click="Cancel_Click" Background="#45475A" Foreground="#CDD6F4"/>
+            <Button Content="  Lưu Rule  " Click="Ok_Click" Margin="8,0,0,0"
+                    Background="#89B4FA" Foreground="#1E1E2E" FontWeight="SemiBold"/>
+        </StackPanel>
+    </Grid>
+</Window>

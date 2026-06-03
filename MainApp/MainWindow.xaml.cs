@@ -1,12 +1,19 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using CommonLibrary;
+using CommonLibrary.Models;
+using ScoringEngine;
 
 namespace MainApp
 {
@@ -58,6 +65,12 @@ namespace MainApp
         private IntPtr _officeHwnd = IntPtr.Zero;
         private Process _officeProcess;
         private bool _isExcel;
+
+        // Package integration
+        private TestModel _loadedTest;
+        private TaskModel _currentTask;
+        private string _packageDir = string.Empty;
+        private readonly ScoringExecutor _executor = new ScoringExecutor();
 
         public MainWindow()
         {
@@ -236,6 +249,185 @@ namespace MainApp
         }
 
         private void ClearLog_Click(object sender, RoutedEventArgs e) => LogText.Text = string.Empty;
+
+        // ── Package integration ────────────────────────────────────────
+
+        private void LoadPackage_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Package ZIP|*.zip|All Files|*.*",
+                Title  = "Chọn package bài thi (.zip)"
+            };
+            if (dlg.ShowDialog() != true) return;
+
+            try
+            {
+                // Clean up previous extraction
+                if (!string.IsNullOrEmpty(_packageDir) && Directory.Exists(_packageDir))
+                    Directory.Delete(_packageDir, recursive: true);
+
+                _packageDir = Path.Combine(Path.GetTempPath(),
+                    "MOS_Pkg_" + Guid.NewGuid().ToString("N")[..8]);
+                ZipFile.ExtractToDirectory(dlg.FileName, _packageDir);
+
+                var testJson = Directory
+                    .GetFiles(_packageDir, "test.json", SearchOption.AllDirectories)
+                    .FirstOrDefault();
+
+                if (testJson == null)
+                    throw new FileNotFoundException("Không tìm thấy test.json trong package.");
+
+                _loadedTest = JsonSerializer.Deserialize<TestModel>(File.ReadAllText(testJson));
+                if (_loadedTest == null) throw new InvalidDataException("test.json không hợp lệ.");
+
+                // Resolve template file paths relative to package Templates/ folder
+                var templatesDir = Path.Combine(Path.GetDirectoryName(testJson)!, "Templates");
+                foreach (var task in _loadedTest.Tasks)
+                {
+                    if (!string.IsNullOrEmpty(task.TemplateFile))
+                    {
+                        var fileName = Path.GetFileName(task.TemplateFile);
+                        var localPath = Path.Combine(templatesDir, fileName);
+                        if (File.Exists(localPath))
+                            task.TemplateFile = localPath;
+                    }
+                }
+
+                // Populate task selector
+                TaskComboBox.Items.Clear();
+                foreach (var task in _loadedTest.Tasks)
+                    TaskComboBox.Items.Add(new ComboBoxItem
+                    {
+                        Content = $"Task {task.Number}: {task.Objective}",
+                        Tag     = task
+                    });
+
+                TaskComboBox.SelectedIndex = 0;
+                TaskSelectorBorder.Visibility = Visibility.Visible;
+                AppendLog($"Đã load: {_loadedTest.Name} · {_loadedTest.Tasks.Count} tasks · {_loadedTest.TotalPoints} điểm");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi load package:\n{ex.Message}", "Lỗi",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void TaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (TaskComboBox.SelectedItem is ComboBoxItem item && item.Tag is TaskModel task)
+            {
+                _currentTask = task;
+                UpdateTaskView();
+            }
+        }
+
+        private void UpdateTaskView()
+        {
+            if (_currentTask == null) return;
+
+            ExerciseTitle.Text = $"Task {_currentTask.Number}: {_currentTask.Objective}";
+            TaskPointsLabel.Text = $"{_currentTask.Points} điểm · {_currentTask.ScoringRules.Count} rules";
+
+            // Build dynamic instruction steps
+            StepsPanel.Children.Clear();
+            var lines = _currentTask.Instruction
+                .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var row = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(0, 0, 0, 6)
+                };
+
+                var badge = new Border
+                {
+                    Width = 20, Height = 20,
+                    CornerRadius = new CornerRadius(10),
+                    Background = new SolidColorBrush(Color.FromRgb(0x31, 0x32, 0x44)),
+                    Margin = new Thickness(0, 2, 8, 0),
+                    Child = new TextBlock
+                    {
+                        Text = (i + 1).ToString(),
+                        Foreground = new SolidColorBrush(Color.FromRgb(0xCD, 0xD6, 0xF4)),
+                        FontSize = 11,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment   = VerticalAlignment.Center
+                    }
+                };
+
+                var text = new TextBlock
+                {
+                    Text = lines[i].Trim(),
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xBA, 0xC2, 0xDE)),
+                    FontSize = 12,
+                    VerticalAlignment = VerticalAlignment.Top,
+                    TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 280
+                };
+
+                row.Children.Add(badge);
+                row.Children.Add(text);
+                StepsPanel.Children.Add(row);
+            }
+
+            // Auto-open template file if it exists and Excel is not already open
+            if (!string.IsNullOrEmpty(_currentTask.TemplateFile) &&
+                File.Exists(_currentTask.TemplateFile) &&
+                _officeHwnd == IntPtr.Zero)
+            {
+                AppendLog($"Template: {Path.GetFileName(_currentTask.TemplateFile)}");
+                BtnSubmit.Content = "Lưu & Nộp bài";
+            }
+        }
+
+        private async void SubmitAndScore_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentTask == null || _currentTask.ScoringRules.Count == 0)
+            {
+                AppendLog("Đã nộp bài (không có scoring rules).");
+                MessageBox.Show("Đã nộp bài!", "Thông báo",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Ask for the answer file
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Excel Files|*.xlsx;*.xlsm;*.xls|All Files|*.*",
+                Title  = "Chọn file bài làm của bạn để chấm điểm"
+            };
+            if (dlg.ShowDialog() != true) return;
+
+            BtnSubmit.IsEnabled = false;
+            BtnSubmit.Content   = "Đang chấm...";
+            AppendLog($"Chấm điểm: {Path.GetFileName(dlg.FileName)}");
+
+            try
+            {
+                var result = await Task.Run(
+                    () => _executor.ExecuteTask(_currentTask, dlg.FileName));
+
+                AppendLog($"Kết quả Task {result.TaskNumber}: {result.TotalPoints}/{result.MaxPoints} điểm");
+
+                var win = new ScoringResultWindow(result) { Owner = this };
+                win.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"Lỗi chấm: {ex.Message}");
+                MessageBox.Show($"Không thể chấm điểm:\n{ex.Message}", "Lỗi",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnSubmit.IsEnabled = true;
+                BtnSubmit.Content   = "Lưu & Nộp bài";
+            }
+        }
 
         private void AppendLog(string message)
         {
