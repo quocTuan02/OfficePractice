@@ -49,6 +49,7 @@ namespace MainApp
         const uint SWP_NOMOVE     = 0x0002;
         const uint SWP_SHOWWINDOW  = 0x0040;
         const uint SWP_NOZORDER    = 0x0004;
+        static readonly IntPtr HWND_TOP       = IntPtr.Zero;
         static readonly IntPtr HWND_TOPMOST   = new IntPtr(-1);
         static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
         #endregion
@@ -62,6 +63,12 @@ namespace MainApp
         {
             InitializeComponent();
             StartPipeServer();
+            // Khi MainApp được kích hoạt lại, đẩy Excel lên trên (top-level window)
+            Activated += (s, e) =>
+            {
+                if (_officeHwnd != IntPtr.Zero && _isExcel)
+                    SetWindowPos(_officeHwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
+            };
         }
 
         private void StartPipeServer()
@@ -114,12 +121,6 @@ namespace MainApp
 
                 if (_officeHwnd == IntPtr.Zero) throw new Exception("Không lấy được window handle.");
 
-                // Với Excel, tìm XLDESK window để nhúng chính xác hơn
-                if (_isExcel)
-                {
-                    // Dùng main window cho Excel, không thêm WS_CHILD vì MDI không tương thích
-                }
-
                 EmbedOfficeWindow();
                 ExerciseTitle.Text = title;
                 OfficePlaceholder.Visibility = Visibility.Collapsed;
@@ -138,27 +139,25 @@ namespace MainApp
         {
             if (_officeHwnd == IntPtr.Zero) return;
 
-            int style = GetWindowLong(_officeHwnd, GWL_STYLE);
-
             if (_isExcel)
             {
-                // Excel: KHÔNG dùng SetParent — SetParent làm ribbon bị ẩn
-                // Chỉ xóa decoration rồi snap vào vị trí panel (top-level window)
-                int exStyle = GetWindowLong(_officeHwnd, GWL_STYLE);
-                exStyle &= ~(WS_THICKFRAME | WS_SYSMENU | WS_POPUP);
-                SetWindowLong(_officeHwnd, GWL_STYLE, exStyle);
-                SetWindowPos(_officeHwnd, IntPtr.Zero, 0, 0, 0, 0,
+                // Excel: giữ top-level (DWM/ribbon không hoạt động với WS_CHILD)
+                // Chỉ xóa border + sysmenu, GIỮ WS_CAPTION để ribbon render được
+                int style = GetWindowLong(_officeHwnd, GWL_STYLE);
+                style &= ~(WS_THICKFRAME | WS_SYSMENU | WS_POPUP);
+                SetWindowLong(_officeHwnd, GWL_STYLE, style);
+                SetWindowPos(_officeHwnd, HWND_TOP, 0, 0, 0, 0,
                     SWP_FRAMECHANGED | SWP_NOSIZE | SWP_NOMOVE);
             }
             else
             {
-                // Word (SDI): WS_CHILD hoạt động tốt
+                // Word (SDI): SetParent hoạt động tốt
+                int style = GetWindowLong(_officeHwnd, GWL_STYLE);
                 style &= ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_POPUP);
                 style |= WS_CHILD | WS_CLIPSIBLINGS;
                 SetWindowLong(_officeHwnd, GWL_STYLE, style);
-                SetWindowPos(_officeHwnd, IntPtr.Zero, 0, 0, 0, 0,
+                SetWindowPos(_officeHwnd, HWND_TOP, 0, 0, 0, 0,
                     SWP_FRAMECHANGED | SWP_NOSIZE | SWP_NOMOVE);
-
                 var mainHwnd = new WindowInteropHelper(this).Handle;
                 SetParent(_officeHwnd, mainHwnd);
             }
@@ -166,7 +165,6 @@ namespace MainApp
             PositionOfficeWindow();
             ShowWindow(_officeHwnd, SW_SHOW);
             InvalidateRect(_officeHwnd, IntPtr.Zero, true);
-
         }
 
         private void PositionOfficeWindow()
@@ -184,11 +182,19 @@ namespace MainApp
 
                     if (_isExcel)
                     {
-                        // Excel là top-level window — đặt tại vị trí panel, Excel ở trên MainApp
-                        MoveWindow(_officeHwnd, (int)screenPos.X, (int)screenPos.Y, w, h, true);
-                        // Đặt Excel TRÊN MainApp để hiển thị (không bị che)
-                        var mainHwnd2 = new WindowInteropHelper(this).Handle;
-                        SetWindowPos(_officeHwnd, mainHwnd2, 0, 0, 0, 0,
+                        // Tính chiều cao title bar (có DPI scale)
+                        var captionH = (int)(GetSystemMetrics(SM_CYCAPTION) * dpi.DpiScaleY);
+
+                        // Dịch Excel lên trên captionH px để title bar ẩn sau toolbar của app
+                        MoveWindow(_officeHwnd, (int)screenPos.X, (int)screenPos.Y - captionH,
+                            w, h + captionH, true);
+
+                        // Clip: ẩn phần title bar (y < captionH), chỉ hiện từ captionH xuống
+                        var rgn = CreateRectRgn(0, captionH, w, h + captionH);
+                        SetWindowRgn(_officeHwnd, rgn, true);
+
+                        // Đưa Excel lên trên cùng (trên MainApp)
+                        SetWindowPos(_officeHwnd, HWND_TOP, 0, 0, 0, 0,
                             SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
                     }
                     else
@@ -213,7 +219,9 @@ namespace MainApp
             {
                 if (_officeHwnd != IntPtr.Zero)
                 {
-                    SetParent(_officeHwnd, IntPtr.Zero);
+                    // Xóa region clip trước khi kill để tránh artifact
+                    SetWindowRgn(_officeHwnd, IntPtr.Zero, false);
+                    if (!_isExcel) SetParent(_officeHwnd, IntPtr.Zero);
                     _officeHwnd = IntPtr.Zero;
                 }
                 _officeProcess?.Kill();
